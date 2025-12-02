@@ -14,7 +14,7 @@ app = Flask(__name__)
 DATA_PATH = Path(DATA_DIR) / OUTPUT_FILE_NAME
 companies = pd.read_csv(DATA_PATH, parse_dates=["date"])
 
-VALUE_COLS = ["open", "high", "low", "close", "adj_close", "volume"]
+VALUE_COLS = ["open", "high", "low", "close", "adj_close", "volume"] # OHLCV values
 
 
 @app.get("/api/tickers")

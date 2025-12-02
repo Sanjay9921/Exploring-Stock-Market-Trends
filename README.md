@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project ingests historical OHLCV data for a curated universe of highly liquid, exchange‑listed equities such as Domino’s Pizza, standardizes it into a tidy time‑series dataset, and exposes it through a Flask‑based REST API. The resulting data and APIs are designed for downstream analytics tasks typical in front‑office and risk roles, including return and volatility analysis, event‑ and corporate‑action‑aware performance evaluation, and large‑scale data preparation pipelines in Python.
+This project ingests historical ``OHLCV`` (Open, High, Low, Close, Volume) data for a curated universe of highly liquid, exchange‑listed equities such as Domino’s Pizza, standardizes it into a tidy time‑series dataset, and exposes it through a Flask‑based REST API. The resulting data and APIs are designed for downstream analytics tasks typical in front‑office and risk roles, including return and volatility analysis, event‑ and corporate‑action‑aware performance evaluation, and large‑scale data preparation pipelines in Python.
 
 ## Project Structure
 
@@ -46,7 +46,13 @@ git clone <your-repo-url> exploring-stock
 cd exploring-stock
 ```
 
-2. (Optional but recommended) create and activate a virtual environment.
+2. Create and activate a virtual environment.
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
 3. Install dependencies:
 
 ```bash
@@ -62,7 +68,7 @@ All data settings live in ``codes/config.py``:
 * ``DEFAULT_END``: Common end dates for all tickers
 * ``DEFAULT_TIKCERS``: Default tickers of the companies
 
-To (re)build datasets/companies.csv for the configured tickers and date range:
+To (re)build ``datasets/companies.csv`` for the configured tickers and date range:
 
 ```bash
 python -m codes.build_dataset
