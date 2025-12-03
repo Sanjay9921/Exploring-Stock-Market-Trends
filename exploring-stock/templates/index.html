@@ -9,10 +9,85 @@
       body { font-family: system-ui, sans-serif; margin: 20px; }
       #controls { margin-bottom: 10px; }
       select { margin-right: 8px; }
+      .portfolio-grid {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .portfolio-card {
+        flex: 1;
+        min-width: 0;
+      }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: right; }
+      th { background: #f4f4f4; }
+      td.label { text-align: left; }
     </style>
   </head>
   <body>
+
+    <!--Exploring Stock Market using Plotly-->
     <h2>Exploring Stock Market</h2>
+
+    <!--Portfolio summary-->
+    <h3>Portfolio allocations</h3>
+
+    <div class="portfolio-grid">
+      <!-- Max‑Sharpe -->
+      <div class="portfolio-card">
+        <h4>Max‑Sharpe portfolio</h4>
+        <table>
+          <tr>
+            <th class="label">Ticker</th>
+            <th>Weight (%)</th>
+          </tr>
+          {% for ticker, w in allocations.max_sharpe.weights.items() %}
+          <tr>
+            <td class="label">{{ ticker }}</td>
+            <td>{{ (w * 100) | round(2) }}</td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td class="label"><strong>Sharpe ratio</strong></td>
+            <td><strong>{{ allocations.max_sharpe.sharpe | round(3) }}</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Min‑vol -->
+      <div class="portfolio-card">
+        <h4>Minimum‑volatility portfolio</h4>
+        <table>
+          <tr>
+            <th class="label">Ticker</th>
+            <th>Weight (%)</th>
+          </tr>
+          {% for ticker, w in allocations.min_vol.weights.items() %}
+          <tr>
+            <td class="label">{{ ticker }}</td>
+            <td>{{ (w * 100) | round(2) }}</td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td class="label"><strong>Volatility</strong></td>
+            <td><strong>{{ allocations.min_vol.volatility | round(3) }}</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- 1/n benchmark -->
+      <div class="portfolio-card">
+        <h4>Equal‑weight benchmark (1/n)</h4>
+        <p>
+          Expected return:
+          {{ allocations.benchmark.expected_return | round(4) }}<br>
+          Sharpe ratio:
+          {{ allocations.benchmark.sharpe | round(3) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Existing Plotly controls -->
     <div id="controls">
       <label>Ticker:
         <select id="ticker-select"></select>

@@ -1,4 +1,6 @@
 flask
-yfinance
+yfinance # Yahoo Finance
 pandas
+PyPortfolioOpt
+numpy
 plotly
