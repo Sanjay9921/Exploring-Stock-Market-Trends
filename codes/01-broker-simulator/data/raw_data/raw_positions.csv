@@ -1,0 +1,17 @@
+broker_name,client_id,client_name,account_name,ticker,quantity,avg_price,currency
+BrokerA,C001,Client A,Client A - BrokerA Account,AAPL,50,308.73,USD
+BrokerA,C001,Client A,Client A - BrokerA Account,AMZN,5,200.45,USD
+BrokerA,C001,Client A,Client A - BrokerA Account,GOOGL,5,262.11,USD
+BrokerA,C001,Client A,Client A - BrokerA Account,META,50,559.49,USD
+BrokerA,C002,Client B,Client B - BrokerA Account,AAPL,20,321.69,USD
+BrokerA,C002,Client B,Client B - BrokerA Account,AMZN,15,229.41,USD
+BrokerA,C002,Client B,Client B - BrokerA Account,GOOGL,10,324.46,USD
+BrokerA,C002,Client B,Client B - BrokerA Account,META,5,607.67,USD
+BrokerB,C001,Client A,Client A - BrokerB Account,AAPL,20,256.86,USD
+BrokerB,C001,Client A,Client A - BrokerB Account,AMZN,50,216.85,USD
+BrokerB,C001,Client A,Client A - BrokerB Account,GOOGL,10,333.8,USD
+BrokerB,C001,Client A,Client A - BrokerB Account,META,50,670.33,USD
+BrokerB,C002,Client B,Client B - BrokerB Account,AAPL,10,250.54,USD
+BrokerB,C002,Client B,Client B - BrokerB Account,AMZN,15,211.67,USD
+BrokerB,C002,Client B,Client B - BrokerB Account,GOOGL,10,246.4,USD
+BrokerB,C002,Client B,Client B - BrokerB Account,META,10,734.05,USD

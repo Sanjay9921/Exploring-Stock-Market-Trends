@@ -1,0 +1,34 @@
+[
+  {
+    "acct_id": 1,
+    "acct_name": "Client A - BrokerA Account",
+    "broker_name": "BrokerA",
+    "client_id": "C001",
+    "client_name": "Client A",
+    "base_currency": "USD"
+  },
+  {
+    "acct_id": 2,
+    "acct_name": "Client B - BrokerA Account",
+    "broker_name": "BrokerA",
+    "client_id": "C002",
+    "client_name": "Client B",
+    "base_currency": "USD"
+  },
+  {
+    "acct_id": 3,
+    "acct_name": "Client A - BrokerB Account",
+    "broker_name": "BrokerB",
+    "client_id": "C001",
+    "client_name": "Client A",
+    "base_currency": "USD"
+  },
+  {
+    "acct_id": 4,
+    "acct_name": "Client B - BrokerB Account",
+    "broker_name": "BrokerB",
+    "client_id": "C002",
+    "client_name": "Client B",
+    "base_currency": "USD"
+  }
+]

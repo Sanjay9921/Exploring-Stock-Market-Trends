@@ -1,0 +1,5 @@
+acct_id,acct_name,broker_name,client_id,client_name,base_currency
+1,Client A - BrokerA Account,BrokerA,C001,Client A,USD
+2,Client B - BrokerA Account,BrokerA,C002,Client B,USD
+3,Client A - BrokerB Account,BrokerB,C001,Client A,USD
+4,Client B - BrokerB Account,BrokerB,C002,Client B,USD

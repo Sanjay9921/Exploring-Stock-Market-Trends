@@ -1,0 +1,39 @@
+<!-- codes/03-consolidated-data-json/templates/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Wealth Data JSON API</title>
+</head>
+<body>
+  <h1>Consolidated Wealth Data API</h1>
+  <p>This module exposes JSON endpoints over the unified portfolio database.</p>
+
+  <h2>Live JSON endpoints</h2>
+  <ul>
+    <li><a href="/api/accounts">/api/accounts</a> – all accounts</li>
+    <li><a href="/api/holdings">/api/holdings</a> – all holdings</li>
+    <li><a href="/api/holdings?acct_id=1">/api/holdings?acct_id=1</a> – holdings for account 1</li>
+    <li><a href="/api/ohlcv?ticker=AAPL">/api/ohlcv?ticker=AAPL</a> – OHLCV for AAPL</li>
+  </ul>
+
+  <h2>Export static JSON for Power BI</h2>
+  <p>
+    First generate static JSON snapshots
+    (<code>accounts.json</code> and <code>holdings.json</code>) under
+    <code>codes/03-consolidated-data-json/data/json_exports/</code>:
+  </p>
+  <ul>
+    <li><a href="/api/export/json">/api/export/json</a> – create/update static JSON files</li>
+  </ul>
+
+  <h2>Serve static JSON over HTTP</h2>
+  <p>
+    After exporting, you can also consume the accounts snapshot via this static URL
+    (usable with Power BI's Web connector):
+  </p>
+  <ul>
+    <li><a href="/static-json/accounts">/static-json/accounts</a> – static accounts.json</li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,5 @@
+at_id,at_ticker,at_name,at_class,at_currency
+1,AAPL,AAPL,equity,USD
+2,AMZN,AMZN,equity,USD
+3,GOOGL,GOOGL,equity,USD
+4,META,META,equity,USD
