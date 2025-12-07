@@ -74,7 +74,7 @@ This is enough to answer: “Who owns what, at which broker, and in which asset 
 
 **Goal:** Pretend to be multiple brokers managing high‑net‑worth clients and exporting data as CSVs. Uses ``yfinance`` to fetch OHLCV prices.
 
-**Key scripts**
+* **Key scripts**
     * ``settings/config.py``
         * Defines BROKERS, CLIENTS, UNIVERSE (list of tickers), START_DATE, END_DATE, BASE_CURRENCY.
     * ``modules/companies_data.py``
@@ -103,7 +103,7 @@ python codes/01-broker-simulator/main.py # from the root repo
 
 **Goal:** Migrate Module 1’s broker CSVs into a unified wealth schema using SQLite + SQLAlchemy. This simulates a central portfolio platform consolidating data from multiple brokers.
 
-**Key scripts**
+* **Key scripts**
     * ``settings/config.py``
         * Locates ``raw_positions.csv`` from Module 1.
         * Defines ``DB_PATH`` pointing to ``codes/02-unified-wealth-migration/data/migrated_data/portfolio.db``.
@@ -140,7 +140,7 @@ pytest codes/02-unified-wealth-migration/tests/test_migration.py -v # from the r
 
 **Goal:** Provide a clean JSON interface over the unified DB and OHLCV data, and *optionally export static JSON snapshots for tools like Power BI*.
 
-**Key scripts**
+* **Key scripts**
     * ``settings/config.py``
         * Computes DB_URI pointing to Module 2’s ``portfolio.db`` in ``data/migrated_data/``.
         * Points to Module 1’s ``companies.csv``.
