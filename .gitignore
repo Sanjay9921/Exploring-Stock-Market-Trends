@@ -2,20 +2,33 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # Virtual environments
 .venv/
 venv/
 env/
 
+# SQLite DBs
+*.db
+
+# Local data artifacts
+broker-simulator/raw_data/
+broker-simulator/data/
+unified-wealth-migration/migrated_data/
+consolidated-data-json/logs/
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb_convert/
 
-# VS Code / IDE
+# Environment / editor
+.env
+*.env
 .vscode/
 .idea/
-*.swp
 
 # OS files
 .DS_Store
@@ -30,10 +43,3 @@ build/
 
 # Logs
 *.log
-
-# Local data artifacts
-datasets/*.csv
-!datasets/example*.csv     # keep only example/sample datasets if you add them
-
-# Plotly / images generated at runtime
-images/generated*/

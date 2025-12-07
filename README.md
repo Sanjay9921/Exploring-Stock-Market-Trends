@@ -1,117 +1,210 @@
-# Exploring Stock Market (Plotly + Flask)
+# Exploring Stock Market Trends with Multi‑Broker Wealth Data Migration and JSON API
 
 ## Overview
 
-This project ingests historical ``OHLCV`` (Open, High, Low, Close, Volume) data for a curated universe of **highly liquid, exchange‑listed equities** (e.g., ``AAPL``, ``AMZN``, ``GOOGL``, ``META``, ``MSFT``), standardizes it into a tidy time‑series dataset, and exposes it through a Flask‑based ``REST API``. On top of the raw data API, the app now computes several **portfolio allocations (equal‑weight, minimum‑volatility, and maximum‑Sharpe)** using mean‑variance optimization techniques, and visualizes both single‑asset history and multi‑asset weights in a simple web UI.
+This project simulates a small wealth platform in three modules:
+
+* **Broker simulator** – generates realistic broker CSV exports and OHLCV data using yfinance.
+* **Unified wealth migration** – migrates broker CSVs into a normalized SQLite database with SQLAlchemy.
+* **Consolidated JSON API** – exposes accounts, holdings, and market data as REST JSON (plus static JSON files) that reporting tools like Power BI can consume.
+
+Everything lives in the existing Exploring‑Stock‑Market‑Trends repository under the ``codes/`` folder.
 
 ## Project Structure
 
 ```text
-exploring-stock/
-├─ app.py                      # Flask entry point (APIs + UI)
-├─ modules/
-│  ├─ __init__.py
-│  ├─ settings/
-│  │   ├─ __init__.py
-│  │   └─ config.py            # global config: dates, tickers, data dir
-│  └─ data/
-│      ├─ helper.py            # yfinance download + tidy dataframe utilities
-│      ├─ create_dataset.py    # CLI script to build datasets/companies.csv
-│      └─ portfolio_opt.py     # portfolio analytics with PyPortfolioOpt
-├─ datasets/
-│  └─ companies.csv            # generated OHLCV data for all tickers
-├─ templates/
-│  └─ index.html               # Plotly + portfolio allocations front-end
-├─ venv/                       # virtual environment (local)
-└─ requirements.txt            # Python dependencies
+Exploring-Stock-Market-Trends/
+├─ venv/                           # Virtualenv (not committed)
+├─ requirements.txt
+├─ README.md                       # This file
+├─ codes/
+│  ├─ 01-broker-simulator/
+│  │   ├─ data/
+│  │   │   ├─ raw_data/           # raw_positions.csv, raw_prices.csv
+│  │   │   └─ ticker_data/        # companies.csv + per-ticker OHLCV CSVs
+│  │   ├─ modules/
+│  │   │   ├─ domain.py
+│  │   │   ├─ companies_data.py
+│  │   │   ├─ broker_raw_data.py
+│  │   │   └─ main.py
+│  │   ├─ settings/config.py
+│  │   └─ main.py                 # entry point for Module 1
+│  │
+│  ├─ 02-unified-wealth-migration/
+│  │   ├─ data/
+│  │   │   ├─ migrated_data/      # portfolio.db + optional CSV snapshots
+│  │   │   └─ test_data/          # test snapshot CSVs
+│  │   ├─ modules/
+│  │   │   ├─ models.py           # Account, Asset, Holding
+│  │   │   └─ migrate_broker_data.py
+│  │   ├─ settings/config.py
+│  │   ├─ tests/
+│  │   │   └─ test_migration.py
+│  │   └─ main.py                 # entry point for Module 2
+│  │
+│  └─ 03-consolidated-data-json/
+│      ├─ data/
+│      │   └─ json_exports/       # accounts.json, holdings.json (static)
+│      ├─ modules/
+│      │   ├─ services/db_session.py
+│      │   ├─ codes_02_models.py  # imports models from Module 2
+│      │   └─ api/
+│      │       ├─ accounts.py     # /api/accounts
+│      │       ├─ holdings.py     # /api/holdings
+│      │       ├─ marketdata.py   # /api/ohlcv
+│      │       └─ export.py       # /api/export/json
+│      ├─ settings/config.py
+│      ├─ templates/index.html
+│      └─ app.py                  # entry point for Module 3
 ```
 
-## Features
+## Concepts and data model
 
-* Downloads historical ``OHLCV`` data for a configurable universe of tickers via ``yfinance``, and stores a unified ``companies.csv`` under ``datasets/``.​
-* Normalizes column names and concatenates all tickers row‑wise into a single tidy DataFrame, with one row per ticker‑date.
-* Builds a wide “prices × tickers” matrix from ``companies.csv`` and computes:
-    * A 1/n equal‑weight benchmark portfolio.
-    * A minimum‑volatility portfolio via ``EfficientFrontier.min_volatility``.
-    * A maximum‑Sharpe portfolio via ``EfficientFrontier.max_sharpe``.​
-* Exposes REST endpoints:
-    * ``GET /api/tickers`` – list of available tickers.
-    * ``GET /api/metrics`` – list of numeric metrics (``open``, ``high``, ``low``, ``close``, ``adj_close``, ``volume``).
-    * ``GET /api/history`` – raw time series for a ticker (optional ``start/end`` filters).
-    * ``GET /api/figure`` – Plotly figure spec (JSON) for a ticker + metric time series.
-    * ``GET /api/allocations`` – JSON payload with weights and metrics for:
-        * equal‑weight benchmark,
-        * min‑volatility portfolio,
-        * max‑Sharpe portfolio.​
-* Simple HTML front‑end (``templates/index.html``) that:
-    * Loads tickers and metrics from the API.
-    * Renders an interactive Plotly time‑series chart for any ticker/metric pair.
-    * Displays three portfolio allocation panels side‑by‑side, showing asset weights and key risk/return statistics.
+The normalized wealth schema in Module 2 uses three tables:
 
-## Setup
+* Account: Represents a client account at a broker (e.g. “Client A – BrokerA Account”), with broker name, client id, and base currency.
+* Asset: One row per ticker (AAPL, MSFT, TLT, etc.), including asset class (equity, bond, fund, alternative) and currency.
+* Holding: Link table -> how many units of a given asset are held in a given account, and at which average cost basis.
 
-1. Clone the repository and move into the project folder:
+This is enough to answer: “Who owns what, at which broker, and in which asset class?” and to compute simple portfolio views later.
+
+## Modules
+
+### Module 1 – Broker simulator
+
+**Goal:** Pretend to be multiple brokers managing high‑net‑worth clients and exporting data as CSVs. Uses ``yfinance`` to fetch OHLCV prices.
+
+**Key scripts**
+    * ``settings/config.py``
+        * Defines BROKERS, CLIENTS, UNIVERSE (list of tickers), START_DATE, END_DATE, BASE_CURRENCY.
+    * ``modules/companies_data.py``
+        * ``fetch_ticker_ohlcv(symbol, start, end)`` – fetches OHLCV for one ticker and standardizes columns (date, open, high, low, close, adj_close, volume, ticker).
+        * ``build_companies_dataset()`` – loops over all tickers in UNIVERSE, aggregates them into ``companies.csv`` and also writes per‑ticker CSVs (AAPL.csv, MSFT.csv, etc.) in ``ticker_data/``.
+    * ``modules/broker_raw_data.py``
+        * ``build_raw_prices(companies_df)`` – adds broker_name to each OHLCV row to create ``raw_prices.csv``.
+        * ``build_raw_positions(companies_df)`` – simulates positions for each broker × client × ticker using last close as reference price and random quantities and cost bases, writing ``raw_positions.csv``.
+    * ``modules/main.py``
+        * Orchestrates the above functions.
+
+**Running Module 1**
 
 ```bash
-git clone <your-repo-url> exploring-stock
-cd exploring-stock
+python codes/01-broker-simulator/main.py # from the root repo
 ```
 
-2. Create and activate a virtual environment.
+***Expected outputs***
+
+* ``codes/01-broker-simulator/data/ticker_data/companies.csv`` – base OHLCV dataset (all tickers).
+* ``codes/01-broker-simulator/data/ticker_data/*.csv`` – per‑ticker OHLCV files.
+* ``codes/01-broker-simulator/data/raw_data/raw_prices.csv`` – broker‑style price export.
+* ``codes/01-broker-simulator/data/raw_data/raw_positions.csv`` – broker‑style positions export.
+
+### Module 2 – Unified wealth migration
+
+**Goal:** Migrate Module 1’s broker CSVs into a unified wealth schema using SQLite + SQLAlchemy. This simulates a central portfolio platform consolidating data from multiple brokers.
+
+**Key scripts**
+    * ``settings/config.py``
+        * Locates ``raw_positions.csv`` from Module 1.
+        * Defines ``DB_PATH`` pointing to ``codes/02-unified-wealth-migration/data/migrated_data/portfolio.db``.
+    * ``modules/models.py``
+        * Account, Asset, Holding models using db = SQLAlchemy() and relationship(back_populates=...).
+    * ``modules/migrate_broker_data.py``
+        * Reads ``raw_positions.csv`` into pandas.
+        * Cleans and validates required columns.
+        * Inserts unique accounts (per broker/client/account_name).
+        * Inserts unique assets (per ticker), inferring asset class via a simple mapping.
+        * Inserts holdings (quantity, cost basis) linking accounts and assets.
+    * ``main.py``
+        * Creates the Flask app, initializes the DB (``db.drop_all()`` + ``db.create_all()``), then calls ``run_migration(app)``.
+    * ``tests/test_migration.py``
+        * Uses Flask + SQLAlchemy to query ``Account``, ``Asset``, ``Holding``, assert non‑zero counts, and exports CSV snapshots into ``data/test_data/``.
+
+**Running Module 2**
 
 ```bash
-python -m venv venv
-venv\Scripts\activate   # on Windows
-# source venv/bin/activate  # on macOS / Linux
+python codes/02-unified-wealth-migration/main.py # from root repo
 ```
 
-3. Install dependencies:
+**Expected outputs**
+    * ``codes/02-unified-wealth-migration/data/migrated_data/portfolio.db`` – unified wealth database.
+    * ``codes/02-unified-wealth-migration/data/test_data/*.csv`` – optional test snapshots via pytest.
+
+**PyTest Check**
 
 ```bash
-pip install -r requirements.txt
+pytest codes/02-unified-wealth-migration/tests/test_migration.py -v # from the root repo
 ```
-4. Generate the dataset
 
-* All data settings live in ``modules/settings/config.py``:
-    * ``DATA_DIR``: location of the ``.csv`` dataset directory.
-    * ``OUTPUT_FILE``: file name for the final ``.csv`` dataset.
-    * ``DEFAULT_START_DATE``: common start date for all tickers.
-    * ``DEFAULT_END_DATE``: common end date for all tickers.
-    * ``DEFAULT_TICKERS``: default list of tickers to download.
-* To (re)build ``datasets/companies.csv`` for the configured tickers and date range:
+### Module 3 – Consolidated JSON API
+
+**Goal:** Provide a clean JSON interface over the unified DB and OHLCV data, and *optionally export static JSON snapshots for tools like Power BI*.
+
+**Key scripts**
+    * ``settings/config.py``
+        * Computes DB_URI pointing to Module 2’s ``portfolio.db`` in ``data/migrated_data/``.
+        * Points to Module 1’s ``companies.csv``.
+        * Defines ``EXPORT_DIR`` for static JSON files.
+    * ``modules/services/db_session.py``
+        * Holds a shared ``SQLAlchemy()`` instance used in Module 3.
+    * ``modules/codes_02_models.py``
+        * Adds Module 2 directory to ``sys.path`` and imports ``Account``, ``Asset``, ``Holding`` from ``02-unified-wealth-migration/modules/models.py``.
+    * ``modules/api/accounts.py`` – **/api/accounts**
+        * Returns all accounts with broker, client, base currency, and number of holdings.
+    * ``modules/api/holdings.py`` – **/api/holdings**
+        * Returns joined holdings view with account and asset info.
+        * Supports ``?acct_id=``... filter.
+    * ``modules/api/marketdata.py`` – **/api/ohlcv**
+        * Reads OHLCV from ``companies.csv``.
+        * Query parameters: ticker (required), optional start, end dates.
+        * Returns a JSON array of OHLCV rows for one ticker.
+    * ``modules/api/export.py`` – **/api/export/json**
+        * Exports current accounts and holdings into static JSON files:
+        * ``data/json_exports/accounts.json``
+        * ``data/json_exports/holdings.json``
+    * ``app.py``
+        * Creates Flask app, configures ``SQLAlchemy`` with ``DB_URI``, registers all blueprints.
+        * Additional routes:
+            * ``/`` – HTML index page with documentation and links.
+            * ``/debug/db`` – quick DB health check (db_path, account count).
+            * ``/static-json/accounts`` – serves ``accounts.json`` over HTTP.
+    * ``templates/index.html``
+        * Lists all live API endpoints and ``export/static`` URLs, with short descriptions.
+
+**Running Module 3**
 
 ```bash
-python -m modules.data.create_dataset
+python codes/03-consolidated-data-json/app.py # from root repo
 ```
 
-* This uses helper functions in ``modules/data/helper.py`` to download and concatenate data, then writes a single CSV under ``datasets/``.
+**Key URLs**
 
-5. Run the Flask app
+* Index: ``http://localhost:5000/``
+* Accounts: ``http://localhost:5000/api/accounts``
+* Holdings: ``http://localhost:5000/api/holdings``
+* Holdings by account: ``http://localhost:5000/api/holdings?acct_id=1``
+* OHLCV: ``http://localhost:5000/api/ohlcv?ticker=AAPL``
+* Export static JSON: ``http://localhost:5000/api/export/json``
+* Static accounts JSON over HTTP: ``http://localhost:5000/static-json/accounts``
 
-* From the project root:
+## End‑to‑end run order
 
 ```bash
-python app.py
+# from the root repo
+
+# 1. Simulate brokers and generate CSVs + OHLCV
+python codes/01-broker-simulator/main.py
+
+# 2. Migrate broker CSVs into unified wealth database
+python codes/02-unified-wealth-migration/main.py
+
+# 3. Start consolidated JSON API
+python codes/03-consolidated-data-json/app.py
+
 ```
 
-* Flask starts in development mode on ``http://127.0.0.1:5000/``.
-    * Open ``http://127.0.0.1:5000/`` in a browser.
-    * Use the **Ticker dropdown** to switch between companies.
-    * Use the **Metric dropdown** to switch between ``open``, ``high``, ``low``, ``close``, ``adj_close``, and ``volume``.
-    * The Plotly chart updates via the ``/api/figure`` endpoint.
-    * Inspect the **three portfolio cards** at the top of the page to see:
-        * equal‑weight benchmark expected return and Sharpe ratio,
-        * min‑volatility portfolio weights and volatility,
-        * max‑Sharpe portfolio weights and Sharpe ratio
-    * You can also call the APIs directly, for example:
-        * ``http://127.0.0.1:5000/api/tickers``
-        * ``http://127.0.0.1:5000/api/metrics``
-        * ``http://127.0.0.1:5000/api/history?ticker=AAPL``
-        * ``http://127.0.0.1:5000/api/figure?ticker=AAPL&metric=close``
-        * ``http://127.0.0.1:5000/api/allocations``
+Once Flask is running, open ``http://localhost:5000/`` and follow the links.
 
-## Development notes
+## Guides
 
-* Core data loading and CSV generation logic is isolated in ``modules/data/helper.py`` and ``modules/data/create_dataset.py``, so it can be reused from other scripts or notebooks.
-* Portfolio optimization logic is encapsulated in ``modules/data/portfolio_opt.py``, which computes returns, covariance, and optimized weights using PyPortfolioOpt’s ``EfficientFrontier`` APIs.​
-* Configuration (tickers, date ranges, file paths) is centralized in ``modules/settings/config.py``, so changing a few constants is enough to regenerate the dataset and recompute all portfolio allocations.
+TBD
